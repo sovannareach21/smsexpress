@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Express  </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Kantumruy Pro', sans-serif; 
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+        }
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full mx-auto">
+        
+        <div class="text-center mb-6">
+            <img src="logo.jfif" alt="SMS Express Logo" class="w-24 h-24 mx-auto rounded-full shadow-lg border-2 border-white mb-2 object-cover">
+            <h1 class="text-2xl font-bold text-blue-900 uppercase tracking-wider">SMS Express</h1>
+            <p class="text-gray-500 text-sm">សេវាកម្មដឹកជញ្ជូនរហ័សទាន់ចិត្ត</p>
+        </div>
+
+        <div id="staff-step" class="page active bg-white p-6 rounded-3xl shadow-2xl border-b-8 border-red-600">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-red-600"> បញ្ចូលទំនិញថ្មី</h2>
+                <button onclick="showPage('client-step')" class="text-xs bg-blue-600 text-white px-4 py-2 rounded-full font-bold shadow-md hover:bg-blue-700">
+                     តាមដានទំនិញ
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <input type="tel" id="senderPhone" placeholder="លេខទូរស័ព្ទអ្នកផ្ញើ" class="w-full border-2 p-3 rounded-xl outline-none focus:border-red-500">
+                <input type="tel" id="receiverPhone" placeholder="លេខទូរស័ព្ទអ្នកទទួល" class="w-full border-2 p-3 rounded-xl outline-none focus:border-red-500">
+                <input type="text" id="location" placeholder="ទីតាំង/អាសយដ្ឋាន" class="w-full border-2 p-3 rounded-xl outline-none focus:border-red-500">
+                
+                <div id="id-display-area" class="hidden p-4 bg-gray-50 border-2 border-dashed rounded-2xl text-center">
+                    <p id="trackingID" class="text-2xl font-black text-blue-700 mb-2"></p>
+                    <div id="qrcode" class="flex justify-center p-2 bg-white rounded-lg mx-auto"></div>
+                </div>
+
+                <button id="btnSave" onclick="saveAndGenerate()" class="w-full bg-red-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-red-700"> ផ្ញើរទំនិញ </button>
+                <button id="btnGoToSearch" onclick="showPage('client-step')" class="hidden w-full bg-gray-800 text-white py-4 rounded-xl font-bold transition"> ស្វែងរកទំនិញ </button>
+            </div>
+        </div>
+
+        <div id="client-step" class="page bg-white p-8 rounded-3xl shadow-2xl border-b-8 border-blue-600">
+            <div class="flex items-center gap-3 mb-6">
+                <button onclick="showPage('staff-step')" class="p-2 bg-gray-100 rounded-full">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <h2 class="text-xl font-bold text-blue-900 text-center flex-1">ស្វែងរកអីវ៉ាន់</h2>
+            </div>
+
+            <div class="space-y-5">
+                <div class="space-y-2">
+                    <input type="text" id="searchInput" placeholder="លេខកូដ ឬ លេខទូរស័ព្ទ..." class="w-full border-2 p-4 rounded-2xl focus:border-blue-600 outline-none">
+                    
+                    <div class="flex items-center gap-2">
+                        <label class="flex-1 flex items-center justify-center gap-2 bg-gray-100 p-3 rounded-xl cursor-pointer hover:bg-gray-200 border-2 border-dashed border-gray-300">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                            <span class="text-sm font-bold text-gray-600">Upload QR</span>
+                            <input type="file" id="qrInput" accept="image/*" class="hidden" onchange="handleQRUpload(this)">
+                        </label>
+                    </div>
+                </div>
+                
+                <button onclick="searchPackage()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700">ស្វែងរកឥឡូវនេះ</button>
+                
+                <div id="resultArea" class="hidden p-5 bg-blue-50 rounded-2xl border border-blue-100">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
+                        <p id="resStatus" class="font-bold text-blue-800">ស្ថានភាពទំនិញ</p>
+                    </div>
+                    <div id="resDetail" class="text-sm text-gray-700 space-y-1"></div>
+                    <button onclick="showPage('staff-step')" class="w-full mt-4 bg-white border border-blue-600 text-blue-600 py-2 rounded-lg text-sm font-bold">ត្រឡប់ទៅផ្ទាំងដើម</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let packageData = null;
+
+        function saveAndGenerate() {
+            const sPhone = document.getElementById('senderPhone').value;
+            const rPhone = document.getElementById('receiverPhone').value;
+            const loc = document.getElementById('location').value;
+
+            if(!rPhone) return alert("សូមបញ្ចូលលេខអ្នកទទួល!");
+
+            const id = "SMS" + Math.floor(10000 + Math.random() * 90000);
+            packageData = { id, sPhone, rPhone, loc, status: "កំពុងរៀបចំចេញដំណើរ" };
+
+            document.getElementById('trackingID').innerText = id;
+            document.getElementById('qrcode').innerHTML = ""; 
+            new QRCode(document.getElementById("qrcode"), { text: id, width: 130, height: 130 });
+
+            document.getElementById('id-display-area').classList.remove('hidden');
+            document.getElementById('btnSave').classList.add('hidden');
+            document.getElementById('btnGoToSearch').classList.remove('hidden');
+        }
+
+        // មុខងារស្វែងរកបែប Universal (ស្វែងរកបានគ្រប់ទិន្នន័យ)
+        function searchPackage() {
+            const input = document.getElementById('searchInput').value.trim();
+            const resArea = document.getElementById('resultArea');
+            
+            if(!input) return alert("សូមបញ្ចូលអ្វីមួយដើម្បីស្វែងរក!");
+
+            resArea.classList.remove('hidden');
+            
+            // ប្រសិនបើស្មើនឹងទិន្នន័យដែលទើបបង្កើត
+            if(packageData && (input === packageData.id || input === packageData.rPhone)) {
+                document.getElementById('resDetail').innerHTML = `
+                    <b>លេខកូដ:</b> ${packageData.id}<br>
+                    <b>អាសយដ្ឋាន:</b> ${packageData.loc}<br>
+                    <b>ស្ថានភាព:</b> <span class="text-green-600">ក្នុងប្រព័ន្ធ</span>
+                `;
+                } else {
+    // បង្ហាញសារថារកមិនឃើញជំនួសឱ្យ Mock Data
+    document.getElementById('resDetail').innerHTML = `
+        <b class="text-red-600">រកមិនឃើញទិន្នន័យ!</b><br>
+        សូមពិនិត្យមើលលេខកូដរបស់អ្នកម្ដងទៀត។
+    `;
+}
+            } else {
+                // សម្រាប់ធ្វើ Demo អោយគ្រូ (វាយលេខអ្វីក៏ចេញលទ្ធផល)
+                document.getElementById('resDetail').innerHTML = `
+                    <b>លេខកូដ:</b> ${input}<br>
+                    <b>អាសយដ្ឋាន:</b> ភ្នំពេញ <br>
+                    <b>ស្ថានភាព:</b> <span class="text-orange-500">កំពុងដឹកជញ្ជូន (Mock Data)</span>
+                `;
+            }
+        }
+
+        // មុខងារអាន QR ពីការ Upload រូបភាព
+        function handleQRUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        document.getElementById('searchInput').value = code.data;
+                        alert("រកឃើញកូដ៖ " + code.data);
+                        searchPackage();
+                    } else {
+                        alert("មិនអាចអាន QR នេះបានទេ សូមព្យាយាមម្តងទៀត!");
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>
