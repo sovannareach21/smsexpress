@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMS Express  </title>
-    <link rel="icon" href="image/logo.jfif" type="image/jfif">
+    <title>SMS Express </title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
@@ -17,14 +16,17 @@
         .page { display: none; }
         .page.active { display: block; animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        /* លាក់ Admin Panel ជាមុន */
+        #admin-panel { display: none; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 gap-6">
 
     <div class="max-w-md w-full mx-auto">
         
-        <div class="text-center mb-6">
-            <img src="image/logo.jfif" alt="SMS Express Logo" class="w-24 h-24 mx-auto rounded-full shadow-lg border-2 border-white mb-2 object-cover">
+        <div class="text-center mb-6 cursor-pointer select-none" onclick="triggerAdmin()">
+            <img src="image/image.png" alt="SMS Express Logo" class="w-24 h-24 mx-auto rounded-full shadow-lg border-2 border-white mb-2 object-cover">
             <h1 class="text-2xl font-bold text-blue-900 uppercase tracking-wider">SMS Express</h1>
             <p class="text-gray-500 text-sm">សេវាកម្មដឹកជញ្ជូនរហ័សទាន់ចិត្ត</p>
         </div>
@@ -48,7 +50,8 @@
                 </div>
 
                 <button id="btnSave" onclick="saveAndGenerate()" class="w-full bg-red-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-red-700"> ផ្ញើរទំនិញ </button>
-                <button id="btnGoToSearch" onclick="showPage('client-step')" class="hidden w-full bg-gray-800 text-white py-4 rounded-xl font-bold transition"> ស្វែងរកទំនិញ </button>
+                <button id="btnReset" onclick="resetForm()" class="hidden w-full bg-gray-500 text-white py-4 rounded-xl font-bold transition"> បញ្ចូលថ្មី </button>
+                <button id="btnGoToSearch" onclick="showPage('client-step')" class="hidden w-full bg-gray-800 text-white py-4 rounded-xl font-bold mt-2"> ស្វែងរកទំនិញ </button>
             </div>
         </div>
 
@@ -75,20 +78,54 @@
                 <button onclick="searchPackage()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700">ស្វែងរកឥឡូវនេះ</button>
                 
                 <div id="resultArea" class="hidden p-5 bg-blue-50 rounded-2xl border border-blue-100">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
-                        <p id="resStatus" class="font-bold text-blue-800">ស្ថានភាពទំនិញ</p>
-                    </div>
                     <div id="resDetail" class="text-sm text-gray-700 space-y-1"></div>
                     <button onclick="showPage('staff-step')" class="w-full mt-4 bg-white border border-blue-600 text-blue-600 py-2 rounded-lg text-sm font-bold">ត្រឡប់ទៅផ្ទាំងដើម</button>
                 </div>
             </div>
         </div>
+    </div>
 
+    <div id="admin-panel" class="max-w-md w-full mx-auto bg-slate-900 p-6 rounded-3xl shadow-2xl text-white">
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2 border-b border-slate-700 pb-2">
+            <span class="p-1 bg-red-500 rounded">⚙️</span> ប្រព័ន្ធគ្រប់គ្រង 
+        </h3>
+
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-blue-400">ជួរទំនិញត្រូវដឹកចេញ</span>
+                <button onclick="dequeueProcess()" class="text-[10px] bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded-md">បញ្ចេញទំនិញ</button>
+            </div>
+            <div id="queueDisplay" class="bg-slate-800 rounded-xl p-3 min-h-[60px] space-y-2">
+                <p class="text-xs text-slate-500 text-center italic">មិនទាន់មានទំនិញក្នុងជួរ</p>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-red-400">ប្រវត្តិសកម្មភាព </span>
+                <button onclick="undoLastAction()" class="text-[10px] bg-red-600 hover:bg-red-500 px-2 py-1 rounded-md">Undo</button>
+            </div>
+            <div id="stackDisplay" class="bg-slate-800 rounded-xl p-3 max-h-[120px] overflow-y-auto space-y-2 text-[10px]">
+                <p class="text-slate-500 text-center italic">មិនទាន់មានសកម្មភាព</p>
+            </div>
+        </div>
     </div>
 
     <script>
-        let packageData = null;
+        let packageQueue = []; 
+        let actionStack = [];  
+        let clickCount = 0;
+
+        // មុខងារសម្ងាត់បើក Admin
+        function triggerAdmin() {
+            clickCount++;
+            if (clickCount >= 3) {
+                const admin = document.getElementById('admin-panel');
+                admin.style.display = admin.style.display === 'block' ? 'none' : 'block';
+                clickCount = 0;
+            }
+            setTimeout(() => { clickCount = 0; }, 1000);
+        }
 
         function saveAndGenerate() {
             const sPhone = document.getElementById('senderPhone').value;
@@ -98,7 +135,10 @@
             if(!rPhone) return alert("សូមបញ្ចូលលេខអ្នកទទួល!");
 
             const id = "SMS" + Math.floor(10000 + Math.random() * 90000);
-            packageData = { id, sPhone, rPhone, loc, status: "កំពុងរៀបចំចេញដំណើរ" };
+            const packageData = { id, sPhone, rPhone, loc, status: "កំពុងរង់ចាំក្នុងជួរ" };
+
+            packageQueue.push(packageData);
+            actionStack.push({ type: 'ADD', data: packageData });
 
             document.getElementById('trackingID').innerText = id;
             document.getElementById('qrcode').innerHTML = ""; 
@@ -106,62 +146,79 @@
 
             document.getElementById('id-display-area').classList.remove('hidden');
             document.getElementById('btnSave').classList.add('hidden');
+            document.getElementById('btnReset').classList.remove('hidden');
             document.getElementById('btnGoToSearch').classList.remove('hidden');
+
+            renderAdminUI();
         }
 
-        // មុខងារស្វែងរកបែប Universal (ស្វែងរកបានគ្រប់ទិន្នន័យ)
+        function dequeueProcess() {
+            if(packageQueue.length === 0) return alert("គ្មានទំនិញក្នុងជួរដឹកចេញទេ!");
+            const removed = packageQueue.shift(); 
+            actionStack.push({ type: 'DEQUEUE', data: removed });
+            alert("ទំនិញកូដ " + removed.id + " ត្រូវបានបញ្ចេញទៅអ្នកដឹកជញ្ជូន!");
+            renderAdminUI();
+        }
+
+        function undoLastAction() {
+            if(actionStack.length === 0) return alert("គ្មានសកម្មភាពអ្វីត្រូវ Undo ទេ!");
+            const lastAction = actionStack.pop(); 
+            
+            if(lastAction.type === 'ADD') {
+                packageQueue = packageQueue.filter(p => p.id !== lastAction.data.id);
+            }
+            alert("បានលុបចោលសកម្មភាពចុងក្រោយរួចរាល់!");
+            renderAdminUI();
+            resetForm();
+        }
+
+        function renderAdminUI() {
+            const qDisp = document.getElementById('queueDisplay');
+            qDisp.innerHTML = packageQueue.length === 0 ? `<p class="text-xs text-slate-500 text-center italic">មិនទាន់មានទំនិញក្នុងជួរ</p>` :
+                packageQueue.map((p, i) => `<div class="flex justify-between items-center bg-slate-700 p-2 rounded text-[11px]"><span><b>${i+1}.</b> ${p.id}</span><span class="text-blue-300">${p.loc}</span></div>`).join('');
+
+            const sDisp = document.getElementById('stackDisplay');
+            sDisp.innerHTML = actionStack.length === 0 ? `<p class="text-slate-500 text-center italic">មិនទាន់មានសកម្មភាព</p>` :
+                [...actionStack].reverse().map(a => `<div class="border-b border-slate-700 pb-1"><span class="${a.type === 'ADD' ? 'text-green-400' : 'text-orange-400'} font-bold">${a.type}:</span> កូដ ${a.data.id}</div>`).join('');
+        }
+
         function searchPackage() {
             const input = document.getElementById('searchInput').value.trim();
             const resArea = document.getElementById('resultArea');
-            
             if(!input) return alert("សូមបញ្ចូលអ្វីមួយដើម្បីស្វែងរក!");
             resArea.classList.remove('hidden');
-            
-            // ប្រសិនបើស្មើនឹងទិន្នន័យដែលទើបបង្កើត
-            if(packageData && (input === packageData.id || input === packageData.rPhone)) {
-                document.getElementById('resDetail').innerHTML = `
-                    <b>លេខកូដ:</b> ${packageData.id}<br>
-                    <b>អាសយដ្ឋាន:</b> ${packageData.loc}<br>
-                    <b>ស្ថានភាព:</b> <span class="text-green-600">ក្នុងប្រព័ន្ធ</span>
-                `;
-            } else {
-                // សម្រាប់ធ្វើ Demo អោយគ្រូ (វាយលេខអ្វីក៏ចេញលទ្ធផល)
-                document.getElementById('resDetail').innerHTML = `
-                    <b>លេខកូដ:</b> ${input}<br>
-                    <b>អាសយដ្ឋាន:</b> ភ្នំពេញ <br>
-                    <b>ស្ថានភាព:</b> <span class="text-orange-500">កំពុងដឹកជញ្ជូន (Mock Data)</span>
-                `;
-            }
+            const found = packageQueue.find(p => p.id === input || p.rPhone === input);
+            document.getElementById('resDetail').innerHTML = found ? `<b>កូដ:</b> ${found.id}<br><b>អាសយដ្ឋាន:</b> ${found.loc}<br><b>ស្ថានភាព:</b> <span class="text-green-600 font-bold">ក្នុងជួរដឹកជញ្ជូន</span>` : `<b>លទ្ធផល:</b> <span class="text-red-500 italic">រកមិនឃើញទិន្នន័យក្នុង Queue ទេ</span>`;
         }
 
-        // មុខងារអាន QR ពីការ Upload រូបភាព
         function handleQRUpload(input) {
             const file = input.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement("canvas");
                     const ctx = canvas.getContext("2d");
-                    canvas.width = img.width;
-                    canvas.height = img.height;
+                    canvas.width = img.width; canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    
-                    if (code) {
-                        document.getElementById('searchInput').value = code.data;
-                        alert("រកឃើញកូដ៖ " + code.data);
-                        searchPackage();
-                    } else {
-                        alert("មិនអាចអាន QR នេះបានទេ សូមព្យាយាមម្តងទៀត!");
-                    }
+                    if (code) { document.getElementById('searchInput').value = code.data; searchPackage(); }
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
+        }
+
+        function resetForm() {
+            document.getElementById('senderPhone').value = "";
+            document.getElementById('receiverPhone').value = "";
+            document.getElementById('location').value = "";
+            document.getElementById('id-display-area').classList.add('hidden');
+            document.getElementById('btnSave').classList.remove('hidden');
+            document.getElementById('btnReset').classList.add('hidden');
+            document.getElementById('btnGoToSearch').classList.add('hidden');
         }
 
         function showPage(id) {
